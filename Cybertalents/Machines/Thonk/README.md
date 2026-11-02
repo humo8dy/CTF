@@ -76,7 +76,4 @@ I leverage the custom SUID binary /home/max/find to target the protected root fl
 Output:
 FLAG{??????????????????}
 
-## 6. Conclusion
-- Vulnerabilities Exploited: ThinkPHP V5 Remote Code Execution (CVE-like behavior via method overloading) and a misconfigured custom SUID binary (/home/max/find).
-- Mitigation: Upgrade the ThinkPHP framework to a patched, secure version and audit the system for unauthorized or insecure SUID binaries.
 
