@@ -1,0 +1,164 @@
+# CyberTalents - Invisible Write-Up
+
+- **Category:** Digital Forensics
+- **Difficulty:** Medium
+- **Tools Used:** Volatility 3, Strings, Foremost, Poppler-utils (pdfimages)
+
+---
+
+## Challenge Description
+
+> Can you see what I can see?  
+> Note: better to use Volatility 3.
+
+![Challenge Description](./screenshots/01_challenge_description.png)
+
+---
+
+## 1. Initial Triage & Extraction
+
+After downloading the challenge archive `Invisible.7z`, extracting it yields a raw memory dump named `memdump.mem` (~2.5 GB).
+
+```bash
+wget https://dr-hubchallenges.s3.us-west-2.amazonaws.com/forensics/Invisible.7z
+7z x Invisible.7z
+ls -al
+```
+
+![Extracting Archive](./screenshots/02_extraction.png)
+
+---
+
+## 2. Process Enumeration
+
+We begin our memory analysis using Volatility 3 to enumerate active processes at the time the memory image was captured (`windows.pslist` and `windows.psscan`).
+
+```bash
+python3 vol.py -f ../memdump.mem windows.pslist
+```
+
+![Process List](./screenshots/03_pslist.png)
+
+Looking at the bottom of the process list, several user-level processes stand out:
+- `cmd.exe` (PID: 728)
+- `SumatraPDF.exe` (PID: 2544)
+- `powershell.exe` (PID: 780)
+- `FTK Imager.exe` (PID: 3932) — used to acquire the memory dump.
+
+Checking the command-line arguments via `windows.cmdline` confirms the execution paths under the user `chrollo`:
+
+```bash
+python3 vol.py -f ../memdump.mem windows.cmdline
+```
+
+```text
+2664  OneDrive.exe    "C:\Users\chrollo\AppData\Local\Microsoft\OneDrive\OneDrive.exe" /background
+728   cmd.exe         "C:\Windows\system32\cmd.exe"
+2544  SumatraPDF.exe  "C:\Users\chrollo\AppData\Local\SumatraPDF\SumatraPDF.exe"
+780   powershell.exe  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+```
+
+![Command Line Output](./screenshots/04_cmdline.png)
+
+---
+
+## 3. Investigating String & File Artifacts
+
+Running a direct `strings` search across the memory image for `flag{` or `cyber{` returns no direct matches, indicating the flag is not stored in plaintext in memory.
+
+Next, we enumerate cached file objects associated with the user `chrollo` using `windows.filescan`:
+
+```bash
+python3 vol.py -f ../memdump.mem windows.filescan | grep -i "chrollo"
+```
+
+Key files located on the user's Desktop include:
+```text
+0xe0005e750b50  \Users\chrollo\Desktop\SumatraPDF.lnk
+0xe00061a5dce0  \Users\chrollo\Desktop\Phisher.afd
+0xe0006242fe80  \Users\chrollo\Desktop\Rootkits and Bootkits Reversing Modern Malware and Next Generation Threats ( PDFDrive ).pdf
+0xe00062483840  \Users\chrollo\Desktop\SumatraPDF-3.4.6-64-install.exe
+0xe000627c11a0  \Users\chrollo\Desktop\298127.pdf
+```
+
+Additionally, we see cached thumbnails created by `SumatraPDF`:
+```text
+0xe00062286090  \Users\chrollo\AppData\Local\SumatraPDF\sumatrapdfcache\40143672b9ac3024ed7ec6579d988fd0.png
+0xe00062497a30  \Users\chrollo\AppData\Local\SumatraPDF\sumatrapdfcache\0d1ef24fca123575b411f3eb0d3253ee.png
+```
+
+Since `SumatraPDF.exe` (PID 2544) was actively running when the dump was taken, and the challenge prompt asks *"Can you see what I can see?"*, our primary focus shifts to the PDF document being viewed in `SumatraPDF.exe`.
+
+---
+
+## 4. Process Memory Dump & File Carving
+
+We dump the memory space of `SumatraPDF.exe` (PID 2544) using `windows.memmap`:
+
+```bash
+python3 vol.py -f ../memdump.mem -o . windows.memmap --pid 2544 --dump
+```
+
+This outputs `pid.2544.dmp`. Next, we run `foremost` on the process dump to carve out any embedded files:
+
+```bash
+foremost -i pid.2544.dmp -o extracted_sumatra
+```
+
+Checking the carved `pdf` directory reveals a single 52 KB PDF document (`00002991.pdf`), which corresponds to `298127.pdf`:
+
+```bash
+cd extracted_sumatra/pdf
+ls -lh
+```
+
+```text
+total 52K
+-rw-rw-r-- 1 root root 52K Nov 17 05:41 00002991.pdf
+```
+
+![Foremost and PDF Carving](./screenshots/05_foremost_pdf.png)
+
+---
+
+## 5. PDF Stream Analysis & Flag Extraction
+
+Opening `00002991.pdf` in a standard PDF viewer displays a single page with a black box reading *"YOU HAVE BEEN HACKED !"*. However, inspecting the internal image objects inside the PDF using `pdfimages` shows that there are actually **two** images embedded on Page 1:
+
+```bash
+pdfimages -list 00002991.pdf
+```
+
+```text
+page   num  type   width height color comp bpc  enc interp  object ID x-ppi y-ppi size ratio
+--------------------------------------------------------------------------------------------
+   1     0 image     750   171  rgb     3   8  image  no         4  0   120   120 12.2K 3.3%
+   1     1 image    1280   720  rgb     3   8  jpeg   no         5  0   204   204 38.1K 1.4%
+```
+
+We extract all embedded images from the PDF file:
+
+```bash
+pdfimages -all 00002991.pdf extracted_images
+ls -la
+```
+
+```text
+-rw-rw-r-- 1 root root 52815 Nov 17 05:41 00002991.pdf
+-rw-rw-r-- 1 root root 15275 Nov 17 05:42 extracted_images-000.png
+-rw-rw-r-- 1 root root 38986 Nov 17 05:42 extracted_images-001.jpg
+```
+
+![PDF Images Extraction](./screenshots/06_pdfimages.png)
+
+While `extracted_images-001.jpg` is the foreground cover image (`1280x720`), opening `extracted_images-000.png` (`750x171`) reveals the hidden image containing the flag.
+
+![Extracted Flag Image](./screenshots/07_flag.png)
+
+---
+
+## Flag
+
+```text
+flag{xxxxxx_xxxxxx_xx_xx_xxxxx_xxxxxx}
+```
