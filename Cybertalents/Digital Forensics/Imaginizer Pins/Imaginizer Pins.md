@@ -131,18 +131,6 @@ The challenge value is a 32-character lowercase hexadecimal string. I have delib
 
 To reproduce the final extraction, dump the 320-byte LZMA input buffer as described in Step 3 and run `extract_key.py` as shown in Step 4.
 
-## Repository layout
-
-```text
-.
-├── Imaginizer Pins.md
-└── extract_key.py
-```
-
 I recommend keeping the original challenge executable and any memory dumps out of a public repository unless the challenge rules explicitly allow redistribution. The helper script contains no hard-coded challenge key.
 
-## Notes
 
-- This write-up documents the static inspection and final extraction process. The helper script handles the LZMA decompression and string-table parsing; it does not independently unpack the protected .NET methods or acquire the decoder buffer from the executable.
-- The 320-byte decoder input is an intermediate analysis artifact. It must be dumped from the recovered string-loader path before the helper can be run against the original challenge file.
-- Do not run unknown challenge executables on a personal or production machine. Use an isolated analysis environment.
